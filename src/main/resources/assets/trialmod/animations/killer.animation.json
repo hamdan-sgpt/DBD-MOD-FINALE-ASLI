@@ -1,0 +1,114 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"idle": {
+			"loop": true,
+			"animation_length": 1.0,
+			"bones": {
+				"body": {
+					"rotation": {
+						"0.0": [0, 0, 0],
+						"0.5": [2, 0, 0],
+						"1.0": [0, 0, 0]
+					}
+				}
+			}
+		},
+		"walk": {
+			"loop": true,
+			"animation_length": 1.0,
+			"bones": {
+				"body": {
+					"rotation": {
+						"0.0": [0, 0, 0],
+						"0.5": [-5, 0, 0],
+						"1.0": [0, 0, 0]
+					}
+				}
+			}
+		},
+		"chase": {
+			"loop": true,
+			"animation_length": 1.0,
+			"bones": {
+				"body": {
+					"rotation": {
+						"0.0": [0, 0, 0],
+						"0.5": [-10, 0, 0],
+						"1.0": [0, 0, 0]
+					}
+				}
+			}
+		},
+		"attack_windup": {
+			"loop": false,
+			"animation_length": 0.5,
+			"bones": {
+				"body": {
+					"rotation": {
+						"0.0": [0, 0, 0],
+						"0.5": [0, 15, 0]
+					}
+				}
+			}
+		},
+		"attack": {
+			"loop": false,
+			"animation_length": 0.5,
+			"bones": {
+				"body": {
+					"rotation": {
+						"0.0": [0, 15, 0],
+						"0.2": [0, -30, 0],
+						"0.5": [0, 0, 0]
+					}
+				}
+			},
+			"sound_effects": {},
+			"particle_effects": {},
+			"timeline": {
+				"0.2": [ "hit" ]
+			}
+		},
+		"downing_victim": {
+			"loop": false,
+			"animation_length": 1.0,
+			"bones": {
+				"body": {
+					"rotation": {
+						"0.0": [0, 0, 0],
+						"1.0": [15, 0, 0]
+					}
+				}
+			}
+		},
+		"kill_mori": {
+			"loop": false,
+			"animation_length": 2.0,
+			"bones": {
+				"body": {
+					"rotation": {
+						"0.0": [0, 0, 0],
+						"2.0": [0, 360, 0]
+					}
+				}
+			},
+			"timeline": {
+				"1.5": [ "mori_kill" ]
+			}
+		},
+		"hit_reaction": {
+			"loop": false,
+			"animation_length": 0.5,
+			"bones": {
+				"body": {
+					"rotation": {
+						"0.0": [0, 0, 0],
+						"0.25": [0, 0, 10],
+						"0.5": [0, 0, 0]
+					}
+				}
+			}
+		}
+	}
+}
