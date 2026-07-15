@@ -62,6 +62,16 @@ public class SurvivorDummyEntity extends Monster implements GeoEntity {
         this.entityData.set(ANIM_STATE, state);
     }
 
+    private java.util.UUID boundPlayerUuid;
+
+    public java.util.UUID getBoundPlayerUuid() {
+        return boundPlayerUuid;
+    }
+
+    public void setBoundPlayerUuid(java.util.UUID uuid) {
+        this.boundPlayerUuid = uuid;
+    }
+
     /**
      * Convenience method: set the animation state from the survivor's current status
      * and movement.
@@ -70,13 +80,7 @@ public class SurvivorDummyEntity extends Monster implements GeoEntity {
         switch (status) {
             case DOWNED -> setAnimationState(STATE_DOWNED_CRAWL);
             case HOOKED -> setAnimationState(STATE_HOOKED_STRUGGLE);
-            case INJURED -> {
-                if (isMoving) {
-                    setAnimationState(STATE_INJURED_LIMP);
-                } else {
-                    setAnimationState(STATE_IDLE);
-                }
-            }
+            case INJURED -> setAnimationState(STATE_INJURED_LIMP);
             default -> { // HEALTHY, DEAD, etc.
                 if (isSprinting) {
                     setAnimationState(STATE_RUN);
