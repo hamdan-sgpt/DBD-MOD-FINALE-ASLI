@@ -2,6 +2,7 @@ package com.example.trialmod.client;
 
 import com.example.trialmod.TrialMod;
 import com.example.trialmod.client.renderer.KillerBaseRenderer;
+import com.example.trialmod.client.renderer.SurvivorRenderer;
 import com.example.trialmod.registry.ModEntities;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
@@ -21,5 +22,6 @@ public class ClientModEvents {
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.KILLER_BASE.get(), KillerBaseRenderer::new);
+        event.registerEntityRenderer(ModEntities.SURVIVOR_DUMMY.get(), SurvivorRenderer::new);
     }
 }

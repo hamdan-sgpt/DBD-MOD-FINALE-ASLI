@@ -66,6 +66,7 @@ public class TrialMod {
 
     private void registerAttributes(final net.minecraftforge.event.entity.EntityAttributeCreationEvent event) {
         event.put(ModEntities.KILLER_BASE.get(), com.example.trialmod.entity.KillerBaseEntity.createAttributes().build());
+        event.put(ModEntities.SURVIVOR_DUMMY.get(), com.example.trialmod.entity.SurvivorDummyEntity.createAttributes().build());
     }
 }
 

@@ -2,6 +2,7 @@ package com.example.trialmod.registry;
 
 import com.example.trialmod.TrialMod;
 import com.example.trialmod.entity.KillerBaseEntity;
+import com.example.trialmod.entity.SurvivorDummyEntity;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -18,7 +19,14 @@ public class ModEntities {
                     .sized(0.8f, 2.2f)
                     .build("killer_base"));
 
+    public static final RegistryObject<EntityType<SurvivorDummyEntity>> SURVIVOR_DUMMY = ENTITY_TYPES.register("survivor_dummy",
+            () -> EntityType.Builder.of(SurvivorDummyEntity::new, MobCategory.MISC)
+                    .sized(0.6f, 1.8f)
+                    .noSummon()
+                    .build("survivor_dummy"));
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }
 }
+
