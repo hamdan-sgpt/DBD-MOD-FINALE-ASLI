@@ -98,10 +98,14 @@ public class KillerCombatEvents {
                         }
                     }
 
-                    // Manage Survivor Downed crawl speed penalty
+                    // Manage Survivor Downed crawl speed penalty and crawling pose
                     if (data.getRole() == PlayerRole.SURVIVOR && data.getSurvivorStatus() == SurvivorStatus.DOWNED) {
                         if (!speedAttr.hasModifier(SURVIVOR_CRAWL_MOD)) {
                             speedAttr.addTransientModifier(SURVIVOR_CRAWL_MOD);
+                        }
+                        // If not riding another entity, force vanilla swimming/crawling pose
+                        if (!player.isPassenger()) {
+                            player.setPose(net.minecraft.world.entity.Pose.SWIMMING);
                         }
                     } else {
                         if (speedAttr.hasModifier(SURVIVOR_CRAWL_MOD)) {
