@@ -46,7 +46,6 @@ public class SurvivorDummyEntity extends Monster implements GeoEntity {
     public SurvivorDummyEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
         this.setNoAi(true);
-        this.setInvisible(true);
     }
 
     @Override
