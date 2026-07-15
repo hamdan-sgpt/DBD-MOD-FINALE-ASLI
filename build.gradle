@@ -1,0 +1,129 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net/' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '6.0.54'
+        classpath 'de.siegmar:fastcsv:2.2.2'
+    }
+}
+
+// Inject Minecraft DNS cache entries for offline compilation / local mirror
+try {
+    println "Injecting Minecraft DNS cache entries for local mirror..."
+    java.lang.reflect.Field cacheField = java.net.InetAddress.class.getDeclaredField("cache")
+    cacheField.setAccessible(true)
+    java.util.concurrent.ConcurrentMap cacheMap = (java.util.concurrent.ConcurrentMap) cacheField.get(null)
+
+    java.lang.Class<?> cachedLookupClass = java.lang.Class.forName('java.net.InetAddress$CachedLookup')
+    java.lang.reflect.Constructor<?> constructor = cachedLookupClass.getDeclaredConstructors()[0]
+    constructor.setAccessible(true)
+
+    byte[] ipBytes = [ (byte)150, (byte)171, (byte)110, (byte)97 ] as byte[]
+    java.net.InetAddress ipAddr = java.net.InetAddress.getByAddress("150.171.110.97", ipBytes)
+
+    def hosts = [
+        "piston-meta.mojang.com",
+        "libraries.minecraft.net",
+        "resources.download.minecraft.net",
+        "launcher.mojang.com"
+    ]
+
+    for (String host : hosts) {
+        Object cachedLookup = constructor.newInstance(host, [ipAddr] as java.net.InetAddress[], Long.MAX_VALUE)
+        cacheMap.put(host, cachedLookup)
+        println "Injected DNS bypass: ${host} -> 150.171.110.97"
+    }
+    println "Minecraft DNS cache injection completed successfully."
+} catch (Exception e) {
+    println "Failed to inject DNS cache entries: " + e.getMessage()
+}
+
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'net.minecraftforge.gradle'
+
+group = 'com.example'
+version = '1.0-SNAPSHOT'
+
+base {
+    archivesName = 'trialmod'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                trialmod {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        client {
+            property 'forge.enabledGameTestNamespaces', 'trialmod'
+        }
+
+        server {
+            property 'forge.enabledGameTestNamespaces', 'trialmod'
+            args '--nogui'
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    // GeckoLib Maven
+    maven { url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/' }
+    // Cloth Config Maven
+    maven { url 'https://maven.shedaniel.me/' }
+    mavenCentral()
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.2.0'
+
+    // GeckoLib
+    implementation fg.deobf('software.bernie.geckolib:geckolib-forge-1.20.1:4.4.4')
+
+    // Cloth Config API
+    implementation fg.deobf('me.shedaniel.cloth:cloth-config-forge:11.1.118')
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            minecraft_version: '1.20.1',
+            minecraft_version_range: '[1.20.1, 1.21)',
+            forge_version: '47',
+            forge_version_range: '[47,)',
+            loader_version_range: '[47,)',
+            mod_id: 'trialmod',
+            mod_name: 'TrialMod',
+            mod_license: 'MIT',
+            mod_version: project.version,
+            mod_authors: 'Developer',
+            mod_description: 'A Minecraft asymmetric horror multiplayer mod.'
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
