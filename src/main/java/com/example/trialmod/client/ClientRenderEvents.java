@@ -5,11 +5,10 @@ import com.example.trialmod.capability.PlayerRole;
 import com.example.trialmod.capability.SurvivorStatus;
 import com.example.trialmod.capability.TrialPlayerData;
 import com.example.trialmod.entity.KillerBaseEntity;
+import com.example.trialmod.entity.SurvivorDummyEntity;
 import com.example.trialmod.registry.ModEntities;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
@@ -25,10 +24,24 @@ import java.util.UUID;
 public class ClientRenderEvents {
 
     private static final Map<UUID, KillerBaseEntity> DUMMY_KILLERS = new HashMap<>();
+    private static final Map<UUID, SurvivorDummyEntity> DUMMY_SURVIVORS = new HashMap<>();
 
     public static KillerBaseEntity getOrCreateDummyKiller(UUID playerUuid, Level level) {
-        return DUMMY_KILLERS.computeIfAbsent(playerUuid, uuid ->
-                new KillerBaseEntity(ModEntities.KILLER_BASE.get(), level));
+        return DUMMY_KILLERS.computeIfAbsent(playerUuid, uuid -> {
+            KillerBaseEntity dummy = new KillerBaseEntity(ModEntities.KILLER_BASE.get(), level);
+            // Unique positive integer ID so GeckoLib tracks animation state uniquely
+            dummy.setId(Math.abs(uuid.hashCode()) + 1000000);
+            return dummy;
+        });
+    }
+
+    public static SurvivorDummyEntity getOrCreateDummySurvivor(UUID playerUuid, Level level) {
+        return DUMMY_SURVIVORS.computeIfAbsent(playerUuid, uuid -> {
+            SurvivorDummyEntity dummy = new SurvivorDummyEntity(ModEntities.SURVIVOR_DUMMY.get(), level);
+            // Unique positive integer ID so GeckoLib tracks animation state uniquely
+            dummy.setId(Math.abs(uuid.hashCode()) + 2000000);
+            return dummy;
+        });
     }
 
     @SubscribeEvent
@@ -40,28 +53,19 @@ public class ClientRenderEvents {
             PlayerRole role = data.getRole();
 
             if (role == PlayerRole.KILLER) {
-                // Render Killer as custom GeckoLib Entity model with proper texture
                 renderAsKiller(event, player);
             } else if (role == PlayerRole.SURVIVOR) {
-                // Keep the player's OWN skin, but apply custom poses/rotations based on SurvivorStatus
-                handleSurvivorPlayerRender(event, player, data.getSurvivorStatus());
+                renderAsSurvivor(event, player, data.getSurvivorStatus());
             }
         });
     }
 
+    // ─── Killer Custom 3D GeckoLib Model Rendering ───────────────────────
     private static void renderAsKiller(RenderPlayerEvent.Pre event, Player player) {
-        event.setCanceled(true);
+        event.setCanceled(true); // Stop rendering standard Minecraft player model
 
         KillerBaseEntity dummy = getOrCreateDummyKiller(player.getUUID(), player.level());
-        
-        // Sync transforms
-        dummy.tickCount = player.tickCount;
-        dummy.setPos(player.getX(), player.getY(), player.getZ());
-        dummy.xo = player.xo; dummy.yo = player.yo; dummy.zo = player.zo;
-        dummy.setYRot(player.getYRot()); dummy.setXRot(player.getXRot());
-        dummy.yRotO = player.yRotO; dummy.xRotO = player.xRotO;
-        dummy.yBodyRot = player.yBodyRot; dummy.yBodyRotO = player.yBodyRotO;
-        dummy.yHeadRot = player.getYHeadRot(); dummy.yHeadRotO = player.yHeadRotO;
+        syncDummyTransform(dummy, player);
 
         // Choose animation state
         boolean isMoving = player.getDeltaMovement().horizontalDistanceSqr() > 0.001;
@@ -73,6 +77,37 @@ public class ClientRenderEvents {
             dummy.setAnimationState(0); // IDLE
         }
 
+        renderDummy(event, dummy, player);
+    }
+
+    // ─── Survivor Custom 3D GeckoLib Model Rendering ─────────────────────
+    private static void renderAsSurvivor(RenderPlayerEvent.Pre event, Player player, SurvivorStatus status) {
+        event.setCanceled(true); // Stop rendering standard Minecraft player model
+
+        SurvivorDummyEntity dummy = getOrCreateDummySurvivor(player.getUUID(), player.level());
+        syncDummyTransform(dummy, player);
+
+        boolean isMoving = player.getDeltaMovement().horizontalDistanceSqr() > 0.001;
+        boolean isSprinting = player.isSprinting();
+        
+        // Sync animation state (downed_crawl, hooked_struggle, injured_limp, walk, run, idle)
+        dummy.syncFromSurvivorStatus(status, isMoving, isSprinting);
+
+        renderDummy(event, dummy, player);
+    }
+
+    // ─── Shared helper routines ──────────────────────────────────────────
+    private static void syncDummyTransform(LivingEntity dummy, Player player) {
+        dummy.tickCount = player.tickCount;
+        dummy.setPos(player.getX(), player.getY(), player.getZ());
+        dummy.xo = player.xo; dummy.yo = player.yo; dummy.zo = player.zo;
+        dummy.setYRot(player.getYRot()); dummy.setXRot(player.getXRot());
+        dummy.yRotO = player.yRotO; dummy.xRotO = player.xRotO;
+        dummy.yBodyRot = player.yBodyRot; dummy.yBodyRotO = player.yBodyRotO;
+        dummy.yHeadRot = player.getYHeadRot(); dummy.yHeadRotO = player.yHeadRotO;
+    }
+
+    private static void renderDummy(RenderPlayerEvent.Pre event, LivingEntity dummy, Player player) {
         float rotation = player.getViewYRot(event.getPartialTick());
         Minecraft.getInstance().getEntityRenderDispatcher().render(
                 dummy,
@@ -83,33 +118,5 @@ public class ClientRenderEvents {
                 event.getMultiBufferSource(),
                 event.getPackedLight()
         );
-    }
-
-    private static void handleSurvivorPlayerRender(RenderPlayerEvent.Pre event, Player player, SurvivorStatus status) {
-        // Do NOT cancel event so player's original skin and model (Steve/Alex/Custom) are preserved!
-        PoseStack poseStack = event.getPoseStack();
-
-        if (status == SurvivorStatus.DOWNED) {
-            // Force crawling pose client-side so player legs/arms stretch out in crawling pose
-            if (!player.isPassenger()) {
-                player.setPose(Pose.SWIMMING);
-            }
-        } else if (status == SurvivorStatus.HOOKED) {
-            // Elevate player visual position so they appear hanging on the hook block
-            poseStack.pushPose();
-            poseStack.translate(0.0D, 0.5D, 0.0D);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onRenderPlayerPost(RenderPlayerEvent.Post event) {
-        Player player = event.getEntity();
-        if (!player.level().isClientSide) return;
-
-        TrialPlayerData.getLazy(player).ifPresent(data -> {
-            if (data.getRole() == PlayerRole.SURVIVOR && data.getSurvivorStatus() == SurvivorStatus.HOOKED) {
-                event.getPoseStack().popPose();
-            }
-        });
     }
 }
